@@ -1,0 +1,4 @@
+**build**/
+*.mp3
+*.ogg
+.idea/
