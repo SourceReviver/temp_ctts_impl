@@ -18,14 +18,12 @@ add_executable(ctts
         ctts.cpp
         ctts_main_window.h
         ctts_main_window.cpp
-        service.h
         ctts_config_window.cpp
         ctts_config_window.h
+        tts_service.h
         azure.h
         azure.cpp
-        azure_config_file.h
-        azure_config_widget.h
-        azure_service.h
+        global_network_access_manager.h
 )
 
 target_link_libraries(ctts PRIVATE

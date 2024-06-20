@@ -17,7 +17,7 @@ ctts_config_window::ctts_config_window(QWidget* parent)
     configPane->setLayout(new QVBoxLayout());
     previewPane->setLayout(new QVBoxLayout());
 
-    serviceConfigUI = new AzureConfigWidget(this);
+    serviceConfigUI = new Azure::ConfigWidget(this);
     configPane->layout()->addWidget(serviceConfigUI);
 
     previewLineEdit = new QLineEdit(this);
@@ -28,8 +28,7 @@ ctts_config_window::ctts_config_window(QWidget* parent)
 
     connect(previewButton, &QPushButton::clicked, this, [this] {
         this->serviceConfigUI->save();
-        auto networkaccessmanager = new QNetworkAccessManager();
-        auto newService = Service_azure::Construct(this, networkaccessmanager);
+        auto newService = Azure::Service::Construct(this,"./azure.json");
         if (newService != nullptr) {
             auto _ = newService->speak(previewLineEdit->text().toUtf8());
         } else {
@@ -47,6 +46,7 @@ ctts_config_window::ctts_config_window(QWidget* parent)
     connect(buttonBox, &QDialogButtonBox::accepted, this, [this]() {
         qDebug() << "accept";
         this->serviceConfigUI->save();
+        emit this->finished_config();
         this->deleteLater();
     });
 

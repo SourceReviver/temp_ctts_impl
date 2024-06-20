@@ -1,104 +1,26 @@
 #include "azure.h"
+#include "global_network_access_manager.h"
 #include <QFormLayout>
 #include <QLabel>
-#include <QNetworkReply>
-#include <QString>
 #include <fmt/format.h>
 
-std::optional<azure_config> azure_config::loadFromFile(const QString& p)
+namespace Azure {
+
+bool Service::initalize(QObject* parent, const QString& configFilePath)
 {
-    if (!QFileInfo::exists(p)) {
-        return {};
-    }
-
-    QFile f(p);
-
-    if (!f.open(QFile::ReadOnly)) {
-        return {};
-    };
-
-    QString apiKey;
-    QString region;
-
-    auto json = QJsonDocument::fromJson(f.readAll());
-
-    if (json.isObject()) {
-        QJsonObject o = json.object();
-
-        if (const QJsonValue v = o["apikey"]; v.isString()) {
-            apiKey = v.toString();
-        } else {
-            apiKey = "";
-        }
-
-        if (const QJsonValue v = o["region"]; v.isString()) {
-            region = v.toString();
-        } else {
-            region = "";
-        }
-    }
-
-    return { { apiKey, region } };
-}
-
-bool azure_config::saveToFile(const azure_config& c)
-{
-    QJsonDocument doc(QJsonObject({ { "region", c.region }, { "apikey", c.apiKey } }));
-
-    QSaveFile f("./azure.json");
-    f.open(QSaveFile::WriteOnly);
-    f.write(doc.toJson(QJsonDocument::Indented));
-    return f.commit();
-}
-
-AzureConfigWidget::AzureConfigWidget(QWidget* parent)
-    : ServiceConfigWidget(parent)
-{
-    auto* form = new QFormLayout(this);
-
-    auto config = azure_config::loadFromFile("./azure.json");
-
-    if (!config.has_value()) {
-        region = new QLineEdit("eastus", this);
-        apiKey = new QLineEdit("b9885138792d4403a8ccf1a34553351d", this);
-    } else {
-        region = new QLineEdit(config->region, this);
-        apiKey = new QLineEdit(config->apiKey, this);
-    }
-
-    auto* title = new QLabel("<b>Azure config</b>", this);
-
-    title->setAlignment(Qt::AlignCenter);
-    form->addRow(title);
-    form->addRow("Location/Region", region);
-    form->addRow("API Key", apiKey);
-
-    form->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
-    apiKey->setMinimumWidth(400);
-
-    this->setLayout(form);
-}
-
-std::optional<std::string> AzureConfigWidget::save()
-{
-    if (!azure_config::saveToFile({ .apiKey = apiKey->text().simplified(), .region = region->text().simplified() })) {
-        return { "sth is wrong" };
-    } else {
-        return {};
-    }
-}
-
-bool Service_azure::initalize(QObject* parent, QNetworkAccessManager* networkAccessManager)
-{
-    this->networkAccessManager = networkAccessManager;
     this->setParent(parent);
 
-    auto ret_config = azure_config::loadFromFile("./azure.json");
+    auto ret_config = AzureConfig::loadFromFile(configFilePath);
     if (!ret_config.has_value()) {
-        if (!azure_config::saveToFile({ .apiKey = "b9885138792d4403a8ccf1a34553351d", .region = "eastus" })) {
-            exit(1);
+        if (!AzureConfig::saveToFile({ .apiKey = "b9885138792d4403a8ccf1a34553351d",
+                .region = "eastus",
+                .voiceShortName = "en-CA-ClaraNeural" })) {
+            return false;
         };
+        ret_config = AzureConfig::loadFromFile(configFilePath);
     }
+
+    voiceShortName = ret_config->voiceShortName.toStdString();
 
     request = new QNetworkRequest();
     request->setUrl(QUrl(QString("https://%1.tts.speech.microsoft.com/cognitiveservices/v1").arg(ret_config->region)));
@@ -112,54 +34,185 @@ bool Service_azure::initalize(QObject* parent, QNetworkAccessManager* networkAcc
     audioOutput->setVolume(50);
     player->setAudioOutput(audioOutput);
 
-    connect(player, &QMediaPlayer::errorOccurred, this, &Service_azure::mediaErrorOccur);
-    connect(player, &QMediaPlayer::mediaStatusChanged, this, &Service_azure::mediaStatus);
+    connect(player, &QMediaPlayer::errorOccurred, this, &Service::mediaErrorOccur);
+    connect(player, &QMediaPlayer::mediaStatusChanged, this, &Service::mediaStatus);
 
     return true;
 }
 
-Service_azure* Service_azure::Construct(QObject* parent, QNetworkAccessManager* networkAccessManager)
+Service* Service::Construct(QObject* parent, const QString& configFilePath)
 {
-    auto azure = new Service_azure();
-    if (azure->initalize(parent, networkAccessManager)) {
+    auto azure = new Service();
+    if (azure->initalize(parent, configFilePath)) {
         return azure;
     }
     return nullptr;
 };
 
-[[nodiscard]] std::optional<std::string> Service_azure::speak(QUtf8StringView s)
+[[nodiscard]] std::optional<std::string> Service::speak(QUtf8StringView s)
 {
-    std::string y = fmt::format(R"(
-<speak version='1.0' xml:lang='en-US'>
-    <voice name='en-US-LunaNeural'>
+    std::string y = fmt::format(R"(<speak version='1.0' xml:lang='en-US'>
+    <voice name='{}'>
         {}
     </voice>
-</speak>
-)",
-        s.data());
+</speak>)",
+        voiceShortName, s.data());
 
-    reply = networkAccessManager->post(*request, y.data());
-    connect(reply, &QNetworkReply::finished, [this]() {
+    reply = globalNetworkAccessManager->post(*request, y.data());
+    connect(reply, &QNetworkReply::finished, this, [this]() {
         player->setSourceDevice(reply);
         player->play();
     });
 
-    connect(reply, &QNetworkReply::errorOccurred, this, &Service_azure::slotError);
-    connect(reply, &QNetworkReply::sslErrors, this, &Service_azure::slotSslErrors);
+    connect(reply, &QNetworkReply::errorOccurred, this, &Service::slotError);
+    connect(reply, &QNetworkReply::sslErrors, this, &Service::slotSslErrors);
     return std::nullopt;
 }
 
-ServiceConfigWidget* Service_azure::getConfigWidget(QWidget* HostWiget) { return new AzureConfigWidget(HostWiget); }
+TextToSpeechConfigWidget* Service::getConfigWidget(QWidget* HostWiget) { return new ConfigWidget(HostWiget); }
 
-Service_azure::~Service_azure() = default;
+Service::~Service() = default;
 
-void Service_azure::slotError(QNetworkReply::NetworkError e) { qDebug() << e; }
+void Service::slotError(QNetworkReply::NetworkError e) { qDebug() << e; }
 
-void Service_azure::slotSslErrors() { qDebug() << "ssl error"; }
+void Service::slotSslErrors() { qDebug() << "ssl error"; }
 
-void Service_azure::mediaErrorOccur(QMediaPlayer::Error error, const QString& errorString)
+void Service::mediaErrorOccur(QMediaPlayer::Error error, const QString& errorString)
 {
     qDebug() << "media " << error << errorString;
 }
 
-void Service_azure::mediaStatus(QMediaPlayer::MediaStatus status) { qDebug() << "status " << status; }
+void Service::mediaStatus(QMediaPlayer::MediaStatus status) { qDebug() << "status " << status; }
+
+std::optional<AzureConfig> AzureConfig::loadFromFile(const QString& p)
+{
+    if (!QFileInfo::exists(p)) {
+        return {};
+    }
+
+    QFile f(p);
+
+    if (!f.open(QFile::ReadOnly)) {
+        return {};
+    };
+
+    AzureConfig ret {};
+
+    auto json = QJsonDocument::fromJson(f.readAll());
+
+    if (json.isObject()) {
+        QJsonObject o = json.object();
+
+        if (const QJsonValue v = o["apikey"]; v.isString()) {
+            ret.apiKey = v.toString();
+        } else {
+            ret.apiKey = "";
+        }
+
+        if (const QJsonValue v = o["region"]; v.isString()) {
+            ret.region = v.toString();
+        } else {
+            ret.region = "";
+        }
+
+        if (const QJsonValue v = o["voiceShortName"]; v.isString()) {
+            ret.voiceShortName = v.toString();
+        } else {
+            ret.voiceShortName = "";
+        }
+    }
+
+    return { ret };
+}
+
+bool Azure::AzureConfig::saveToFile(const AzureConfig& c)
+{
+    QJsonDocument doc(
+        QJsonObject({ { "region", c.region }, { "apikey", c.apiKey }, { "voiceShortName", c.voiceShortName } }));
+
+    QSaveFile f("./azure.json");
+    f.open(QSaveFile::WriteOnly);
+    f.write(doc.toJson(QJsonDocument::Indented));
+    return f.commit();
+}
+
+ConfigWidget::ConfigWidget(QWidget* parent)
+    : TextToSpeechConfigWidget(parent)
+{
+    auto* form = new QFormLayout(this);
+
+    auto config = AzureConfig::loadFromFile("./azure.json");
+
+    voiceList = new QComboBox(this);
+
+    if (!config.has_value()) {
+        region = new QLineEdit("eastus", this);
+        apiKey = new QLineEdit("b9885138792d4403a8ccf1a34553351d", this);
+    } else {
+        region = new QLineEdit(config->region, this);
+        apiKey = new QLineEdit(config->apiKey, this);
+    }
+
+    this->asyncVoiceListPopulating(config->voiceShortName);
+
+    auto* title = new QLabel("<b>Azure config</b>", this);
+
+    title->setAlignment(Qt::AlignCenter);
+    form->addRow(title);
+    form->addRow("Location/Region", region);
+    form->addRow("API Key", apiKey);
+    form->addRow("Voice", voiceList);
+    voiceList->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    form->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
+    apiKey->setMinimumWidth(400);
+
+    this->setLayout(form);
+}
+
+std::optional<std::string> ConfigWidget::save()
+{
+    if (!AzureConfig::saveToFile({ .apiKey = apiKey->text().simplified(),
+            .region = region->text().simplified(),
+            .voiceShortName = voiceList->currentText() })) {
+        return { "sth is wrong" };
+    } else {
+        return {};
+    }
+}
+
+void ConfigWidget::asyncVoiceListPopulating(const QString& autoSelectThisName)
+{
+
+    voiceListRequest.reset(new QNetworkRequest());
+    voiceListRequest->setRawHeader("User-Agent", "WhatEver");
+    voiceListRequest->setUrl(QUrl(QString("https://%1.%2/voices/list").arg(this->region->text(), Azure::hostUrlBody)));
+    voiceListRequest->setRawHeader("Ocp-Apim-Subscription-Key", this->apiKey->text().toLatin1());
+
+    voiceListReply.reset(globalNetworkAccessManager->get(*voiceListRequest));
+
+    connect(voiceListReply.get(), &QNetworkReply::finished, this, [this, autoSelectThisName]() {
+        voiceList->clear();
+        auto json = QJsonDocument::fromJson(this->voiceListReply->readAll());
+        if (json.isArray()) {
+            for (auto&& o : json.array()) {
+                if (o.isObject()) {
+                    if (auto r = o.toObject()["ShortName"]; r.isString()) {
+                        if (auto s = r.toString(); !s.isNull()) {
+                            voiceList->addItem(s);
+                        }
+                    }
+                }
+            }
+        }
+        if (auto i = voiceList->findText(autoSelectThisName); i != -1) {
+            voiceList->setCurrentIndex(i);
+        }
+    });
+
+    connect(voiceListReply.get(), &QNetworkReply::errorOccurred, this, [this](QNetworkReply::NetworkError e) {
+        qDebug() << "f";
+        this->voiceList->clear();
+        this->voiceList->addItem("Failed to retrive voice list: " + QString::number(e));
+    });
+}
+}

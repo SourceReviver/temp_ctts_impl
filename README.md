@@ -1,9 +1,9 @@
 # Add a new service checklist
 
-* according to `service.h`
-* implement `Service::speak`
-* implement `Service::getConfigWidget`
-* implement `ServiceConfigWidget::save`
+* according to `ttsService.h`
+* implement `TextToSpeechService::speak`
+* implement `TextToSpeechService::getConfigWidget`
+* implement `TextToSpeechConfigWidget::save`
 * DONE.
 
 # Design
@@ -13,16 +13,16 @@ TL;DR: Simply do nothing, avoid almost all temptation to do ðŸ’© abstraction ðŸ’
 Goals:
 
 * Make adding new services easy.
-* Allow modifying / evolving any one of the services arbitrarily without incurring the need to modify another.
+* Allow modifying / evolving any one of the services arbitrarily without incurring the need to touch another.
 
 Code:
 
 * Config file deserialization and Service state mutating won't exist in parallel.
 * Service construct only based on config file. One single deterministic routine.
-
-(1) Service configure GUI <-> (2) Service's config file <-> (3) Live Service Object
-
-(1) shall never mutate (3).
+```
+(1) Service configure GUI ---write---> (2) Service's config file ---create---> (3) Live Service Object
+```
+(1) will neither mutate nor access (3).
 
 construct (3) only according to (2).
 

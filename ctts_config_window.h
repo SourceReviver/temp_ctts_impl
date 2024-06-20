@@ -10,9 +10,11 @@ class ctts_config_window : public QWidget {
 public:
     explicit ctts_config_window(QWidget* parent);
 
+signals:
+    void finished_config();
 private:
     QDialogButtonBox* buttonBox;
-    ServiceConfigWidget* serviceConfigUI;
+    TextToSpeechConfigWidget* serviceConfigUI;
     QLineEdit* previewLineEdit;
     QPushButton* previewButton;
 };

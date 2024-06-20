@@ -5,14 +5,14 @@
 #include <QPointer>
 #include <QPushButton>
 
-#include "service.h"
+#include "tts_service.h"
 
 class ctts_mainwindow : public QMainWindow {
     Q_OBJECT
 
 public:
     explicit ctts_mainwindow();
-    std::unique_ptr<Service> currentService;
+    std::unique_ptr<TextToSpeechService> currentService;
     QPointer<QPlainTextEdit> textEdit;
     QPointer<QPushButton> speakButton;
     QPointer<QPushButton> configButton;
