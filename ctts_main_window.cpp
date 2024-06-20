@@ -2,6 +2,7 @@
 #include "service_azure.h"
 #include "ctts_config_window.h"
 #include <QVBoxLayout>
+#include <QGroupBox>
 
 ctts_mainwindow::ctts_mainwindow()
 {

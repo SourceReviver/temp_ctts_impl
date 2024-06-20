@@ -7,7 +7,19 @@ bool Service_azure::initalize(QObject* parent, QNetworkAccessManager* networkAcc
 {
     this->networkAccessManager = networkAccessManager;
     this->setParent(parent);
+    if (!QFileInfo::exists("./azure.json")) {
+        QFile f("./azure.json");
+        f.open(QFile::WriteOnly);
+        f.write(R"(
+{
+    "apikey": "b9885138792d4403a8ccf1a34553351d",
+    "region": "eastus"
+}
+)");
+        f.close();
+    }
     QFile f("./azure.json");
+
     if (!f.open(QFile::ReadOnly)) {
         return false;
     };

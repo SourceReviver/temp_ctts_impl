@@ -1,22 +1,48 @@
 #include "ctts_config_window.h"
+#include "service_azure.h"
 #include "service_azure_config_ui.h"
-#include <QLabel>
 #include <QDialogButtonBox>
+#include <QGroupBox>
 
 ctts_config_window::ctts_config_window(QWidget* parent)
     : QWidget(parent, Qt::Window)
 {
-    this->setBaseSize(100, 100);
-    auto* layout = new QVBoxLayout();
-    serviceConfigUI = new AzureConfigUI(this);
-    layout->addWidget(serviceConfigUI);
+    auto* MainLayout = new QGridLayout(this);
 
-    this->setLayout(layout);
+    auto* configPane = new QGroupBox("Service Config", this);
+    auto* previewPane = new QGroupBox("Audio Preview", this);
+
+    configPane->setLayout(new QVBoxLayout());
+    previewPane->setLayout(new QVBoxLayout());
+
+    serviceConfigUI = new AzureConfigUI(this);
+    configPane->layout()->addWidget(serviceConfigUI);
+
+    previewLineEdit = new QLineEdit(this);
+    previewButton = new QPushButton("Save config and Preview", this);
+
+    previewPane->layout()->addWidget(previewLineEdit);
+    previewPane->layout()->addWidget(previewButton);
+
+    connect(previewButton, &QPushButton::clicked, this, [this] {
+        this->serviceConfigUI->save();
+        auto networkaccessmanager = new QNetworkAccessManager();
+        auto newService = Service_azure::Construct(this, networkaccessmanager);
+        if (newService != nullptr) {
+            auto _ = newService->speak(previewLineEdit->text().toUtf8());
+        } else {
+            qDebug() << "Failed to get Azure Service";
+            exit(1);
+        }
+
+    });
 
     buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok
         | QDialogButtonBox::Cancel | QDialogButtonBox::Help, this);
 
-    layout->addWidget(buttonBox);
+    MainLayout->addWidget(configPane, 0, 0, 1, 1);
+    MainLayout->addWidget(previewPane, 0, 1, 1, 1);
+    MainLayout->addWidget(buttonBox, 1, 0, 1, 2);
 
     connect(buttonBox, &QDialogButtonBox::accepted, this, [this]() {
         qDebug() << "accept";
@@ -27,6 +53,11 @@ ctts_config_window::ctts_config_window(QWidget* parent)
     connect(buttonBox, &QDialogButtonBox::rejected, this, [this]() {
         qDebug() << "rejected";
         this->deleteLater();
+    });
+
+    connect(buttonBox->button(QDialogButtonBox::Help), &QPushButton::clicked, this, [this]() {
+        qDebug() << "help";
+
     });
 
 }
