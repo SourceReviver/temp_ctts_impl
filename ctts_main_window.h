@@ -1,8 +1,8 @@
 #pragma once
 
 #include <QMainWindow>
-#include <QPointer>
 #include <QPlainTextEdit>
+#include <QPointer>
 #include <QPushButton>
 
 #include "service.h"

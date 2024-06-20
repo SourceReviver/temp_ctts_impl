@@ -1,8 +1,8 @@
 #include "ctts_main_window.h"
-#include "service_azure.h"
+#include "azure.h"
 #include "ctts_config_window.h"
-#include <QVBoxLayout>
 #include <QGroupBox>
+#include <QVBoxLayout>
 
 ctts_mainwindow::ctts_mainwindow()
 {
@@ -31,18 +31,15 @@ ctts_mainwindow::ctts_mainwindow()
     vbox->addWidget(speakButton.get());
     vbox->addWidget(configButton.get());
 
-    connect(speakButton.get(), &QPushButton::clicked, this, [this] {
-        currentService->speak(textEdit->toPlainText().toStdString());
-    });
+    connect(speakButton.get(), &QPushButton::clicked, this,
+        [this] { currentService->speak(textEdit->toPlainText().toStdString()); });
 
     connect(configButton.get(), &QPushButton::clicked, this, [this] {
         auto* cfgWindow = new ctts_config_window(this);
         cfgWindow->setWindowModality(Qt::WindowModal);
         cfgWindow->show();
-
     });
 
     mainWidget->setLayout(vbox);
     this->setCentralWidget(mainWidget);
-
 }

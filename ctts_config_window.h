@@ -1,9 +1,8 @@
 #pragma once
 
-#include <QWidget>
-#include <QPushButton>
+#include "azure.h"
 #include <QDialogButtonBox>
-#include "service_azure_config_ui.h"
+#include <QWidget>
 
 class ctts_config_window : public QWidget {
     Q_OBJECT
@@ -13,7 +12,7 @@ public:
 
 private:
     QDialogButtonBox* buttonBox;
-    ServiceConfigUI* serviceConfigUI;
+    ServiceConfigWidget* serviceConfigUI;
     QLineEdit* previewLineEdit;
     QPushButton* previewButton;
 };

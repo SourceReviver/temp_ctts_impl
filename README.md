@@ -1,3 +1,13 @@
+# Add a new service checklist
+
+* according to `service.h`
+* implement `Service::speak`
+* implement `Service::getConfigWidget`
+* implement `ServiceConfigWidget::save`
+* DONE.
+
+# Design
+
 TL;DR: Simply do nothing, avoid almost all temptation to do 💩 abstraction 💩 unless absolutely necessary.
 
 Goals:
@@ -8,7 +18,7 @@ Goals:
 Code:
 
 * Config file deserialization and Service state mutating won't exist in parallel.
-* Service always read from config file, this single routine instead of two.
+* Service construct only based on config file. One single deterministic routine.
 
 (1) Service configure GUI <-> (2) Service's config file <-> (3) Live Service Object
 

@@ -1,8 +1,10 @@
+#include "azure.h"
+
 #include "ctts_config_window.h"
-#include "service_azure.h"
-#include "service_azure_config_ui.h"
 #include <QDialogButtonBox>
+#include <QGridLayout>
 #include <QGroupBox>
+#include <QPushButton>
 
 ctts_config_window::ctts_config_window(QWidget* parent)
     : QWidget(parent, Qt::Window)
@@ -15,7 +17,7 @@ ctts_config_window::ctts_config_window(QWidget* parent)
     configPane->setLayout(new QVBoxLayout());
     previewPane->setLayout(new QVBoxLayout());
 
-    serviceConfigUI = new AzureConfigUI(this);
+    serviceConfigUI = new AzureConfigWidget(this);
     configPane->layout()->addWidget(serviceConfigUI);
 
     previewLineEdit = new QLineEdit(this);
@@ -34,11 +36,9 @@ ctts_config_window::ctts_config_window(QWidget* parent)
             qDebug() << "Failed to get Azure Service";
             exit(1);
         }
-
     });
 
-    buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok
-        | QDialogButtonBox::Cancel | QDialogButtonBox::Help, this);
+    buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel | QDialogButtonBox::Help, this);
 
     MainLayout->addWidget(configPane, 0, 0, 1, 1);
     MainLayout->addWidget(previewPane, 0, 1, 1, 1);
@@ -55,9 +55,5 @@ ctts_config_window::ctts_config_window(QWidget* parent)
         this->deleteLater();
     });
 
-    connect(buttonBox->button(QDialogButtonBox::Help), &QPushButton::clicked, this, [this]() {
-        qDebug() << "help";
-
-    });
-
+    connect(buttonBox->button(QDialogButtonBox::Help), &QPushButton::clicked, this, [this]() { qDebug() << "help"; });
 }
