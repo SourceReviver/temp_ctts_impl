@@ -12,7 +12,7 @@ class ctts_mainwindow : public QMainWindow {
 
 public:
     explicit ctts_mainwindow();
-    QPointer<Service> currentService;
+    std::unique_ptr<Service> currentService;
     QPointer<QPlainTextEdit> textEdit;
     QPointer<QPushButton> speakButton;
     QPointer<QPushButton> configButton;

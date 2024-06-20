@@ -16,8 +16,8 @@ qt_standard_project_setup()
 
 add_executable(ctts
         ctts.cpp
-        ctts_mainwindow.h
-        ctts_mainwindow.cpp
+        ctts_main_window.h
+        ctts_main_window.cpp
         service.h
         service_azure.cpp
         service_azure_config_ui.h

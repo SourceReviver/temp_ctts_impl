@@ -1,4 +1,4 @@
-#include "ctts_mainwindow.h"
+#include "ctts_main_window.h"
 #include "service_azure.h"
 #include "ctts_config_window.h"
 #include <QVBoxLayout>
@@ -11,7 +11,16 @@ ctts_mainwindow::ctts_mainwindow()
 
     auto* mainWidget = new QWidget(this);
 
-    currentService = new Service_azure(this, networkManager);
+    auto newService = Service_azure::Construct(this, networkManager);
+
+    if (newService != nullptr) {
+        // has_value checks if a type-value is returned
+        currentService.reset(newService);
+    } else {
+        qDebug() << "Failed to get Azure Service";
+        exit(1);
+    }
+
     textEdit = new QPlainTextEdit(this);
     textEdit->setPlainText("hello");
     speakButton = new QPushButton("Speak", this);
