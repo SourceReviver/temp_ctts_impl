@@ -1,8 +1,13 @@
 #include "ctts_main_window.h"
 #include "azure.h"
 #include "ctts_config_window.h"
+#include "ctts_current_service.h"
+#include "dummy.h"
+
 #include <QGroupBox>
 #include <QVBoxLayout>
+#include <memory>
+#include <utility>
 
 ctts_mainwindow::ctts_mainwindow()
 {
@@ -10,7 +15,7 @@ ctts_mainwindow::ctts_mainwindow()
 
     auto* mainWidget = new QWidget(this);
 
-    auto newService = Azure::Service::Construct(this, "./azure.json");
+    TextToSpeechService* newService = GlobalCurrentService->getServiceAccordingToConfigInDisk();
 
     if (newService != nullptr) {
         // has_value checks if a type-value is returned
@@ -36,7 +41,7 @@ ctts_mainwindow::ctts_mainwindow()
         auto* cfgWindow = new ctts_config_window(this);
         cfgWindow->setWindowModality(Qt::WindowModal);
         connect(cfgWindow, &ctts_config_window::finished_config, this, [this] {
-            auto newService = Azure::Service::Construct(this, "./azure.json");
+            auto newService = GlobalCurrentService->getServiceAccordingToConfigInDisk();
 
             if (newService != nullptr) {
                 // has_value checks if a type-value is returned

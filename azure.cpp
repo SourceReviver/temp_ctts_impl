@@ -6,10 +6,8 @@
 
 namespace Azure {
 
-bool Service::initalize(QObject* parent, const QString& configFilePath)
+bool Service::private_initalize(const QString& configFilePath)
 {
-    this->setParent(parent);
-
     auto ret_config = AzureConfig::loadFromFile(configFilePath);
     if (!ret_config.has_value()) {
         if (!AzureConfig::saveToFile({ .apiKey = "b9885138792d4403a8ccf1a34553351d",
@@ -23,7 +21,8 @@ bool Service::initalize(QObject* parent, const QString& configFilePath)
     voiceShortName = ret_config->voiceShortName.toStdString();
 
     request = new QNetworkRequest();
-    request->setUrl(QUrl(QString("https://%1.tts.speech.microsoft.com/cognitiveservices/v1").arg(ret_config->region)));
+    request->setUrl(QUrl(
+        QString(QStringLiteral("https://%1.tts.speech.microsoft.com/cognitiveservices/v1")).arg(ret_config->region)));
     request->setRawHeader("User-Agent", "WhatEver");
     request->setRawHeader("Ocp-Apim-Subscription-Key", ret_config->apiKey.toLatin1());
     request->setRawHeader("Content-Type", "application/ssml+xml");
@@ -40,10 +39,10 @@ bool Service::initalize(QObject* parent, const QString& configFilePath)
     return true;
 }
 
-Service* Service::Construct(QObject* parent, const QString& configFilePath)
+Service* Service::Construct(const QString& configFilePath)
 {
     auto azure = new Service();
-    if (azure->initalize(parent, configFilePath)) {
+    if (azure->private_initalize(configFilePath)) {
         return azure;
     }
     return nullptr;
@@ -68,8 +67,6 @@ Service* Service::Construct(QObject* parent, const QString& configFilePath)
     connect(reply, &QNetworkReply::sslErrors, this, &Service::slotSslErrors);
     return std::nullopt;
 }
-
-TextToSpeechConfigWidget* Service::getConfigWidget(QWidget* HostWiget) { return new ConfigWidget(HostWiget); }
 
 Service::~Service() = default;
 
@@ -185,7 +182,8 @@ void ConfigWidget::asyncVoiceListPopulating(const QString& autoSelectThisName)
 
     voiceListRequest.reset(new QNetworkRequest());
     voiceListRequest->setRawHeader("User-Agent", "WhatEver");
-    voiceListRequest->setUrl(QUrl(QString("https://%1.%2/voices/list").arg(this->region->text(), Azure::hostUrlBody)));
+    voiceListRequest->setUrl(QUrl(QString(QStringLiteral("https://%1.%2/voices/list"))
+                                      .arg(this->region->text(), QString::fromUtf8(Azure::hostUrlBody))));
     voiceListRequest->setRawHeader("Ocp-Apim-Subscription-Key", this->apiKey->text().toLatin1());
 
     voiceListReply.reset(globalNetworkAccessManager->get(*voiceListRequest));

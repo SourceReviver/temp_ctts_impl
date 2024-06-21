@@ -46,15 +46,14 @@ class Service : public TextToSpeechService {
     Q_OBJECT
 
 public:
-    static Service* Construct(QObject* parent, const QString& configFilePath);
+    static Service* Construct(const QString& configFilePath);
     [[nodiscard]] std::optional<std::string> speak(QUtf8StringView s) override;
-    [[nodiscard]] TextToSpeechConfigWidget* getConfigWidget(QWidget*) override;
 
     ~Service() override;
 
 private:
     Service() = default;
-    bool initalize(QObject* parent, const QString& configFilePath);
+    bool private_initalize(const QString& configFilePath);
     QNetworkReply* reply;
     QMediaPlayer* player;
     QNetworkRequest* request;

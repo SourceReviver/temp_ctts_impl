@@ -4,7 +4,6 @@
 
 int main(int argc, char* argv[])
 {
-
     QApplication gui(argc, argv);
     (new ctts_mainwindow())->show();
     return QApplication::exec();
